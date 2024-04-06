@@ -6,7 +6,9 @@ The outside one will communicate via LoRa to the inside one. The inside one will
 
 Equipment:
 2 x NodeMCU-32S, ESP32 WiFi+Bluetooth Development Board.
+---------
 2 x RFM98W 433MHZ
+---------
 2 x BME280-3.3V
-
+---------
 ![BME280 wiring schematic](https://github.com/ShakyPizza/Vedurstod-S14/blob/main/BME280_Sensor_Wiring.png)
