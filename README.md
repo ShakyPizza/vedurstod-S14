@@ -9,3 +9,4 @@ Equipment:
 2 x RFM98W 433MHZ
 2 x BME280-3.3V
 
+![alt text](https://github.com/ShakyPizza/Vedurstod-S14/blob/main/BME280_Sensor_Wiring.png)?raw=true)
