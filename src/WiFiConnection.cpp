@@ -1,4 +1,3 @@
-// WiFiConnection.cpp
 #include "WiFiConnection.h"
 #include <WiFi.h> // Include the ESP32 WiFi library
 
