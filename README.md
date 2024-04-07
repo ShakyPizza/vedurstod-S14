@@ -5,10 +5,11 @@ The plan is to have two ESP32's. One inside the house logging temperature and hu
 The outside one will communicate via LoRa to the inside one. The inside one will be connected to my home wifi and transmit the measurements to a mySQL server running on a Linux computer in my garage.
 
 Equipment:
+-
 2 x NodeMCU-32S, ESP32 WiFi+Bluetooth Development Board.
----------
+
 2 x RFM98W 433MHZ
----------
+
 2 x BME280-3.3V
----------
+
 ![BME280 wiring schematic](https://github.com/ShakyPizza/Vedurstod-S14/blob/main/img/BME280_Sensor_Wiring.png)
