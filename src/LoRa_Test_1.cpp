@@ -4,6 +4,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 #include <LoRaNow.h>
+#include <Arduino.h>
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
