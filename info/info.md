@@ -2,9 +2,9 @@ info.md
 
 ---------
 
-!
+Command:
 esptool.py -p /dev/cu.usbserial-110 flash_id
-!
+
 
 Tæki 1
 ---
