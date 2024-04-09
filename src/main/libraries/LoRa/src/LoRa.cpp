@@ -1,7 +1,7 @@
 // Copyright (c) Sandeep Mistry. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#include "LoRa.h"
+#include <LoRa.h>
 
 // registers
 #define REG_FIFO                 0x00
@@ -16,12 +16,11 @@
 #define REG_FIFO_TX_BASE_ADDR    0x0e
 #define REG_FIFO_RX_BASE_ADDR    0x0f
 #define REG_FIFO_RX_CURRENT_ADDR 0x10
-#define REG_IRQ_FLAGS_MASK       0x11 //add
 #define REG_IRQ_FLAGS            0x12
 #define REG_RX_NB_BYTES          0x13
 #define REG_PKT_SNR_VALUE        0x19
 #define REG_PKT_RSSI_VALUE       0x1a
-#define REG_RSSI                 0x1b //add
+#define REG_RSSI_VALUE           0x1b
 #define REG_MODEM_CONFIG_1       0x1d
 #define REG_MODEM_CONFIG_2       0x1e
 #define REG_PREAMBLE_MSB         0x20
@@ -48,49 +47,26 @@
 #define MODE_TX                  0x03
 #define MODE_RX_CONTINUOUS       0x05
 #define MODE_RX_SINGLE           0x06
-#define MODE_CAD                 0x07 //add
 
 // PA config
 #define PA_BOOST                 0x80
 
 // IRQ masks
-#define IRQ_CAD_END_MASK           0x01
-#define IRQ_CAD_DONE_MASK          0x04
 #define IRQ_TX_DONE_MASK           0x08
-#define IRQ_HEADER_MASK            0x10
 #define IRQ_PAYLOAD_CRC_ERROR_MASK 0x20
 #define IRQ_RX_DONE_MASK           0x40
-#define IRQ_RX_TOUT_MASK           0x80
+
+#define RF_MID_BAND_THRESHOLD    525E6
+#define RSSI_OFFSET_HF_PORT      157
+#define RSSI_OFFSET_LF_PORT      164
 
 #define MAX_PKT_LENGTH           255
 
-#define MAP_DIO0_LORA_RXDONE    0x00
-#define MAP_DIO0_LORA_TXDONE    0x40
-#define MAP_DIO0_LORA_CADDONE   0x80
-#define MAP_DIO0_LORA_NOP       0xC0
-
-#define MAP_DIO1_LORA_RXTOUT    0x00
-#define MAP_DIO1_LORA_FCC       0x10
-#define MAP_DIO1_LORA_CADDETECT 0x20
-#define MAP_DIO1_LORA_NOP       0x30
-
-#define MAP_DIO2_LORA_FCC0      0x00
-#define MAP_DIO2_LORA_FCC1      0x04
-#define MAP_DIO2_LORA_FCC2      0x08
-#define MAP_DIO2_LORA_NOP       0x0C
-
-#define MAP_DIO3_LORA_CADDONE   0x00
-#define MAP_DIO3_LORA_HEADER    0x01
-#define MAP_DIO3_LORA_CRC       0x02
-#define MAP_DIO3_LORA_NOP       0x03
-
-
-#ifdef ESP8266 || ESP32
+#if (ESP8266 || ESP32)
     #define ISR_PREFIX ICACHE_RAM_ATTR
 #else
     #define ISR_PREFIX
 #endif
-
 
 LoRaClass::LoRaClass() :
   _spiSettings(LORA_DEFAULT_SPI_FREQUENCY, MSBFIRST, SPI_MODE0),
@@ -108,7 +84,7 @@ LoRaClass::LoRaClass() :
 
 int LoRaClass::begin(long frequency)
 {
-#ifdef ARDUINO_SAMD_MKRWAN1300
+#if defined(ARDUINO_SAMD_MKRWAN1300) || defined(ARDUINO_SAMD_MKRWAN1310)
   pinMode(LORA_IRQ_DUMB, OUTPUT);
   digitalWrite(LORA_IRQ_DUMB, LOW);
 
@@ -208,13 +184,8 @@ int LoRaClass::beginPacket(int implicitHeader)
 int LoRaClass::endPacket(bool async)
 {
   
-  if ((async) && (_onTxDone)) {
-    writeRegister(REG_DIO_MAPPING_1, 0x40); // DIO0 => TXDONE
-    writeRegister(REG_IRQ_FLAGS_MASK, 0x00);
-
-    //writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_TXDONE | MAP_DIO1_LORA_NOP | MAP_DIO2_LORA_NOP | MAP_DIO3_LORA_NOP));
-    //writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_TX_DONE_MASK | IRQ_PAYLOAD_CRC_ERROR_MASK | IRQ_HEADER_MASK));
-  }
+  if ((async) && (_onTxDone))
+      writeRegister(REG_DIO_MAPPING_1, 0x40); // DIO0 => TXDONE
 
   // put in TX mode
   writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_TX);
@@ -240,17 +211,6 @@ bool LoRaClass::isTransmitting()
   if (readRegister(REG_IRQ_FLAGS) & IRQ_TX_DONE_MASK) {
     // clear IRQ's
     writeRegister(REG_IRQ_FLAGS, IRQ_TX_DONE_MASK);
-  }
-
-  return false;
-}
-
-bool LoRaClass::rxTimeOut()
-{
-  if ((readRegister(REG_IRQ_FLAGS) & IRQ_RX_TOUT_MASK) != 0) {
-    // clear IRQ's
-    writeRegister(REG_IRQ_FLAGS, IRQ_RX_TOUT_MASK);
-    return true;
   }
 
   return false;
@@ -294,9 +254,6 @@ int LoRaClass::parsePacket(int size)
     // reset FIFO address
     writeRegister(REG_FIFO_ADDR_PTR, 0);
 
-    writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_RX_DONE_MASK | IRQ_RX_TOUT_MASK | IRQ_HEADER_MASK)); //IRQ_LORA_CRCERR_MASK
-    writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT | MAP_DIO2_LORA_NOP | MAP_DIO3_LORA_NOP));
-
     // put in single RX mode
     writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_SINGLE);
   }
@@ -306,7 +263,7 @@ int LoRaClass::parsePacket(int size)
 
 int LoRaClass::packetRssi()
 {
-  return (readRegister(REG_PKT_RSSI_VALUE) - (_frequency < 868E6 ? 164 : 157));
+  return (readRegister(REG_PKT_RSSI_VALUE) - (_frequency < RF_MID_BAND_THRESHOLD ? RSSI_OFFSET_LF_PORT : RSSI_OFFSET_HF_PORT));
 }
 
 float LoRaClass::packetSnr()
@@ -331,6 +288,11 @@ long LoRaClass::packetFrequencyError()
   const float fError = ((static_cast<float>(freqError) * (1L << 24)) / fXtal) * (getSignalBandwidth() / 500000.0f); // p. 37
 
   return static_cast<long>(fError);
+}
+
+int LoRaClass::rssi()
+{
+  return (readRegister(REG_RSSI_VALUE) - (_frequency < RF_MID_BAND_THRESHOLD ? RSSI_OFFSET_LF_PORT : RSSI_OFFSET_HF_PORT));
 }
 
 size_t LoRaClass::write(uint8_t byte)
@@ -437,8 +399,6 @@ void LoRaClass::receive(int size)
 {
 
   writeRegister(REG_DIO_MAPPING_1, 0x00); // DIO0 => RXDONE
-  writeRegister(REG_IRQ_FLAGS_MASK, 0x00);
-  //writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_RX_DONE_MASK | IRQ_PAYLOAD_CRC_ERROR_MASK | IRQ_HEADER_MASK));
 
   if (size > 0) {
     implicitHeaderMode();
@@ -657,14 +617,35 @@ void LoRaClass::setOCP(uint8_t mA)
   writeRegister(REG_OCP, 0x20 | (0x1F & ocpTrim));
 }
 
+void LoRaClass::setGain(uint8_t gain)
+{
+  // check allowed range
+  if (gain > 6) {
+    gain = 6;
+  }
+  
+  // set to standby
+  idle();
+  
+  // set gain
+  if (gain == 0) {
+    // if gain = 0, enable AGC
+    writeRegister(REG_MODEM_CONFIG_3, 0x04);
+  } else {
+    // disable AGC
+    writeRegister(REG_MODEM_CONFIG_3, 0x00);
+	
+    // clear Gain and set LNA boost
+    writeRegister(REG_LNA, 0x03);
+	
+    // set gain
+    writeRegister(REG_LNA, readRegister(REG_LNA) | (gain << 5));
+  }
+}
+
 byte LoRaClass::random()
 {
-  static byte result = 0;
-  for(int i = 0; i < 8; i++) {
-    result = (result << 1) | (result >> 7); // Spread randomness around / rotate left 
-    result ^= readRegister(REG_RSSI_WIDEBAND); // XOR preserves randomness
-  }
-  return result;
+  return readRegister(REG_RSSI_WIDEBAND);
 }
 
 void LoRaClass::setPins(int ss, int reset, int dio0)
@@ -711,7 +692,7 @@ void LoRaClass::implicitHeaderMode()
 void LoRaClass::handleDio0Rise()
 {
   int irqFlags = readRegister(REG_IRQ_FLAGS);
-  //Serial.println(irqFlags, HEX);
+
   // clear IRQ's
   writeRegister(REG_IRQ_FLAGS, irqFlags);
 
@@ -730,11 +711,7 @@ void LoRaClass::handleDio0Rise()
       if (_onReceive) {
         _onReceive(packetLength);
       }
-
-      // reset FIFO address
-      writeRegister(REG_FIFO_ADDR_PTR, 0);
     }
-
     else if ((irqFlags & IRQ_TX_DONE_MASK) != 0) {
       if (_onTxDone) {
         _onTxDone();
@@ -772,150 +749,6 @@ uint8_t LoRaClass::singleTransfer(uint8_t address, uint8_t value)
 ISR_PREFIX void LoRaClass::onDio0Rise()
 {
   LoRa.handleDio0Rise();
-}
-
-//------------------------------------
-
-
-
-#define SF_CAD 7
-#define CAD_RSSI 40
-
-
-/*
-#define SF_CAD 6
-#define CAD_RSSI 50
-*/
-
-
-void LoRaClass::onReceiveCAD(void(*callback)(int))
-{
-  _onReceive = callback;
-
-  if (callback) {
-    pinMode(_dio0, INPUT);
-    writeRegister(REG_DIO_MAPPING_1, 0x00);
-    attachInterrupt(digitalPinToInterrupt(_dio0), LoRaClass::onCADRise, RISING);
-  } else {
-    detachInterrupt(digitalPinToInterrupt(_dio0));
-  }
-}
-
-
-void LoRaClass::receiveCAD()
-{
-  setSpreadingFactor(SF_CAD);
-  //writeRegister(REG_SYMB_TIMEOUT_LSB, (uint8_t) 0x05);
-  //writeRegister(REG_IRQ_FLAGS, readRegister(REG_IRQ_FLAGS));
-  writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_STDBY);
-  writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_CADDONE | MAP_DIO1_LORA_CADDETECT | MAP_DIO2_LORA_NOP | MAP_DIO3_LORA_NOP));
-  writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_CAD_DONE_MASK | IRQ_CAD_END_MASK | IRQ_PAYLOAD_CRC_ERROR_MASK | IRQ_HEADER_MASK));
-  writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_CAD);
-}
-
-ISR_PREFIX void LoRaClass::onCADRise()
-{
-  LoRa.handleCADRise();
-}
-
-void LoRaClass::handleCADRise()
-{
-  static int sf = SF_CAD;
-  //static int sf = 7;
-  //micros1 = micros();
-  int irqFlags = readRegister(REG_IRQ_FLAGS);
-/*
-  Serial.print("Flags: ");
-  Serial.print(irqFlags, HEX);
-  Serial.println();
-*/
-  // clear IRQ's
-  writeRegister(REG_IRQ_FLAGS, irqFlags);
-
-  if ((irqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK) == 0)
-  {
-    if ((irqFlags & IRQ_RX_DONE_MASK) != 0)
-    {
-      // received a packet
-      _packetIndex = 0;
-
-      // read packet length
-      int packetLength = _implicitHeaderMode ? readRegister(REG_PAYLOAD_LENGTH) : readRegister(REG_RX_NB_BYTES);
-
-      // set FIFO address to current RX address
-      writeRegister(REG_FIFO_ADDR_PTR, readRegister(REG_FIFO_RX_CURRENT_ADDR));
-
-      if (_onReceive)
-      {
-        _onReceive(packetLength);
-      }
-
-      // reset FIFO address
-      writeRegister(REG_FIFO_ADDR_PTR, 0);
-      //_txdone = true;
-
-      sf = SF_CAD;
-      receiveCAD();
-    }
-    else if ((irqFlags & IRQ_TX_DONE_MASK) != 0) {
-      if (_onTxDone) {
-        _onTxDone();
-      }
-    }
-    else if ((irqFlags & IRQ_RX_TOUT_MASK) != 0)
-    {
-      sf = SF_CAD;
-      receiveCAD();
-    }
-
-    else if ((irqFlags & IRQ_CAD_DONE_MASK) != 0)
-    {
-     
-      int rssi = readRegister(REG_RSSI);
-      //sf = getSpreadingFactor();
-      if (rssi > CAD_RSSI || sf != SF_CAD)
-      {
-
-      
-        if ((irqFlags & IRQ_CAD_END_MASK) != 0) {
-          
-          //writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK | IRQ_LORA_HEADER_MASK)); //IRQ_LORA_CRCERR_MASK
-          writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) ~(IRQ_RX_DONE_MASK | IRQ_RX_TOUT_MASK | IRQ_HEADER_MASK)); //IRQ_LORA_CRCERR_MASK
-          writeRegister(REG_DIO_MAPPING_1, (uint8_t)(MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT | MAP_DIO2_LORA_NOP | MAP_DIO3_LORA_NOP));
-          writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_SINGLE);
-          return;
-        }
-        setSpreadingFactor(++sf);
-      }
-      else
-      {
-        sf = SF_CAD;
-        setSpreadingFactor(SF_CAD);
-      }
-
-      if (sf == 13) {
-        sf = SF_CAD;
-        receiveCAD();
-      }
-      writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_CAD);
-    }
-  }
-  else
-  {
-    int rssi = readRegister(REG_RSSI);
-    Serial.print("Error Flags: ");
-    Serial.print(irqFlags);
-    Serial.print(" ");
-    Serial.print(getSpreadingFactor());
-    Serial.println(" ");
-    sf = SF_CAD;
-    receiveCAD();
-  }
-}
-
-void LoRaClass::debug(){
-  int irqFlags = readRegister(REG_IRQ_FLAGS);
-  Serial.println(irqFlags, HEX);
 }
 
 LoRaClass LoRa;

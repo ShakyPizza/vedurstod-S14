@@ -7,12 +7,18 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-#ifdef ARDUINO_SAMD_MKRWAN1300
+#if defined(ARDUINO_SAMD_MKRWAN1300)
 #define LORA_DEFAULT_SPI           SPI1
-#define LORA_DEFAULT_SPI_FREQUENCY 250000
+#define LORA_DEFAULT_SPI_FREQUENCY 200000
 #define LORA_DEFAULT_SS_PIN        LORA_IRQ_DUMB
 #define LORA_DEFAULT_RESET_PIN     -1
 #define LORA_DEFAULT_DIO0_PIN      -1
+#elif defined(ARDUINO_SAMD_MKRWAN1310)
+#define LORA_DEFAULT_SPI           SPI1
+#define LORA_DEFAULT_SPI_FREQUENCY 200000
+#define LORA_DEFAULT_SS_PIN        LORA_IRQ_DUMB
+#define LORA_DEFAULT_RESET_PIN     -1
+#define LORA_DEFAULT_DIO0_PIN      LORA_IRQ
 #else
 #define LORA_DEFAULT_SPI           SPI
 #define LORA_DEFAULT_SPI_FREQUENCY 8E6 
@@ -38,7 +44,8 @@ public:
   int packetRssi();
   float packetSnr();
   long packetFrequencyError();
-  int getSpreadingFactor();
+
+  int rssi();
 
   // from Print
   virtual size_t write(uint8_t byte);
@@ -72,6 +79,8 @@ public:
   void disableInvertIQ();
   
   void setOCP(uint8_t mA); // Over Current Protection control
+  
+  void setGain(uint8_t gain); // Set LNA gain
 
   // deprecated
   void crc() { enableCrc(); }
@@ -85,12 +94,6 @@ public:
 
   void dumpRegisters(Stream& out);
 
-  void receiveCAD();
-  void onReceiveCAD(void (*callback)(int));
-
-  bool rxTimeOut();
-  void debug();
-
 private:
   void explicitHeaderMode();
   void implicitHeaderMode();
@@ -98,6 +101,7 @@ private:
   void handleDio0Rise();
   bool isTransmitting();
 
+  int getSpreadingFactor();
   long getSignalBandwidth();
 
   void setLdoFlag();
@@ -107,9 +111,6 @@ private:
   uint8_t singleTransfer(uint8_t address, uint8_t value);
 
   static void onDio0Rise();
-
-  void handleCADRise();
-  static void onCADRise();
 
 private:
   SPISettings _spiSettings;
