@@ -2,8 +2,17 @@ info.md
 
 ---------
 
-Command:
-"""esptool.py -p /dev/cu.usbserial-110 flash_id"""
+!
+esptool.py -p /dev/cu.usbserial-110 flash_id
+!
+
+| Name      |  Device         |  MAC       | Manuf.  |  Device | Flash size |
+|-----------|-----------------|------------|---------|---------|------------|
+| Tæki 1    |  ESP32-WROOM-32 |  ...:5e:64 |    68   |   4016  |    4MB     |
+| Tæki 2    |  ESP32-WROOM-32 |  ...:3d:2c |    68   |   4016  |    4MB     |
+| Tæki 3    |       -         |     -      |    -    |    -    |     -      |
+| Tæki 4    |       -         |     -      |    -    |    -    |     -      |
+|-----------|-----------------|------------|---------|---------|------------|  
 
 
 Tæki 1
