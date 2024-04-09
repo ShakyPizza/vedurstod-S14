@@ -10,7 +10,7 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 
 // LoRa configuration parameters
-//**const long frequency = 433E6;  // LoRa Frequency in Hz (adjust based on your region)
+const long frequency = 433E6;  // LoRa Frequency in Hz (adjust based on your region)
 //**const int csPin = 18;          // LoRa radio chip select pin
 //**const int resetPin = 14;       // LoRa radio reset pin
 //**const int irqPin = 26;         // LoRa radio IRQ pin
