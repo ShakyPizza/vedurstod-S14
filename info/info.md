@@ -19,3 +19,4 @@ Manufacturer: 68
 Device: 4016
 Detected flash size: 4MB
 Hard resetting via RTS pin...
+-----
