@@ -1,7 +1,13 @@
 info.md
 
 ---------
-orri@M14 ~ % esptool.py -p /dev/cu.usbserial-110 flash_id
+
+!
+esptool.py -p /dev/cu.usbserial-110 flash_id
+!
+
+Tæki 1
+---
 esptool.py v4.7.0
 Serial port /dev/cu.usbserial-110
 Connecting......
