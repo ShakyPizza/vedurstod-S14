@@ -22,7 +22,7 @@ Crystal is 40MHz\
 MAC: c8:2e:18:26:5e:64 \
 Manufacturer: 68 \
 Device: 4016 \
-Detected flash size: 4MB \
+Detected flash size: 4MB 
 
 Tæki 2
 ---
@@ -34,4 +34,4 @@ Crystal is 40MHz \
 MAC: c8:2e:18:25:3d:2c \
 Manufacturer: 68 \
 Device: 4016 \
-Detected flash size: 4MB \
+Detected flash size: 4MB 
