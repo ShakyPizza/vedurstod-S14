@@ -1,10 +1,11 @@
 #include "WiFiConnection.h"
 #include "BME280Sensor.h"
+#include "secrets.h"
 #include <LoRa.h>
 
 // WiFi credentials
-const char* ssid = "VodafonevSzh";
-const char* password = "m5Hw5hc3";
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
 
 // LoRa configuration parameters
 const long frequency = 915E6;  // LoRa Frequency in Hz (adjust based on your region)
