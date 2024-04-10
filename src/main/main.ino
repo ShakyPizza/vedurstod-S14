@@ -21,8 +21,9 @@ BME280Sensor bmeSensor;
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial);  // Wait for the serial connection to initialize
-  
+  while (!Serial)
+    ;  // Wait for the serial connection to initialize
+
   // Initialize WiFi
   if (!wifi.isConnected()) {
     wifi.connect();
@@ -31,17 +32,18 @@ void setup() {
   // Initialize BME280 Sensor
   if (!bmeSensor.begin()) {
     Serial.println("Could not find a valid BME280 sensor!");
-    while (1);
+    while (1)
+      ;
   }
 
   // Initialize LoRa
   if (!LoRa.begin(frequency)) {
     Serial.println("Starting LoRa failed!");
-    while (1);
+    while (1)
+      ;
   }
 
   Serial.println("Initialization completed.");
-  
 }
 void loop() {
   // Ensure WiFi is connected
@@ -56,7 +58,7 @@ void loop() {
   float pressure = bmeSensor.readPressure();
 
   // Prepare data packet
-  String dataPacket = "Temp: " + String(temperature) + "C, Hum: " + String(humidity) + "%, Press: " + String(pressure/100.0) + "hPa";
+  String dataPacket = "Temp: " + String(temperature) + "C, Hum: " + String(humidity) + "%, Press: " + String(pressure / 100.0) + "hPa";
 
   // Send data packet over LoRa
   LoRa.beginPacket();
@@ -65,12 +67,13 @@ void loop() {
 
   Serial.println(dataPacket);
 
-  delay(10000); // ms delay between readings and transmissions
+  delay(10000);  // ms delay between readings and transmissions
 
-  
+
   digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  delay(200);                       // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(200);                       // wait for a second
-
+  Serial.println("LED ON");
+  delay(200);                      // wait for a second
+  digitalWrite(LED_BUILTIN, LOW);  // turn the LED off by making the voltage LOW
+  delay(200);                      // wait for a second
+  Serial.println("LED OFF :)");
 }
