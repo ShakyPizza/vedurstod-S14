@@ -2,9 +2,13 @@ info.md
 
 ---------
 
-!
+
+In Arduino IDE: ESP32 Dev Module
+
+**Remember to set Flash Frequency to 40 MHz**
+
 esptool.py -p /dev/cu.usbserial-110 flash_id
-!
+
 
 | Name      |  Device         |  Chip         |   MAC       | Manuf.  |  Device | Flash size |
 |-----------|-----------------|------         | ------      |---------|---------|------------|
