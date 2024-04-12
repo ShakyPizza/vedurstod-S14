@@ -6,92 +6,111 @@
 
 #define LED_BUILTIN 2
 
+// Global flag to track status for BME280 and LoRa
+bool isBME280Available = false;
+bool isLoRaAvailable = false;
+
 // WiFi credentials
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 
 // LoRa configuration parameters
 const long frequency = 433E6;  // LoRa Frequency in Hz (adjust based on your region)
-//**const int csPin = 18;          // LoRa radio chip select pin
-//**const int resetPin = 14;       // LoRa radio reset pin
-//**const int irqPin = 26;         // LoRa radio IRQ pin
+const int csPin = 18;          // LoRa radio chip select pin
+const int resetPin = 14;       // LoRa radio reset pin
+const int irqPin = 26;         // LoRa radio IRQ pin
 
 // Create sensor and WiFi objects
 WiFiConnection wifi(ssid, password);
 BME280Sensor bmeSensor;
 
 void setup() {
-
-  // Initialize the ESP32 Watchdog Timer for a 30-second timeout
-  esp_task_wdt_init(30, true); // Enable panic so ESP32 restarts
-  esp_task_wdt_add(NULL); // Add the current task to WDT
-
-  Serial.println("Initializing Watchdog...");
-
+  pinMode(LED_BUILTIN, OUTPUT); // Ensure LED pin is set to output mode
   Serial.begin(115200);
-  while (!Serial)
-    ;  // Wait for the serial connection to initialize
-
+  while (!Serial); // Wait for the serial connection to initialize
+  
+  Serial.println("Starting setup...");
+  wifi.connect();
   // Initialize WiFi
-  if (!wifi.isConnected()) {
-    wifi.connect();
-  }
+  //if (!wifi.isConnected()) {
+    //Serial.println("Connecting to WiFi...");
+    //wifi.connect();
+    //if (wifi.isConnected()) {
+      //Serial.println("Connected to WiFi.");
+    //} else {
+      //Serial.println("Failed to connect to WiFi.");
+    //}
+  //}
 
-esp_task_wdt_reset(); // Reset the WDT after successful initialization
-
-  // Initialize BME280 Sensor
+  // Initialize BME280
+  Serial.println("Initializing BME280...");
   if (!bmeSensor.begin()) {
-    Serial.println("Could not find a valid BME280 sensor!");
-    while (1)
-      ;
+    Serial.println("BME280 initialization failed!");
+    isBME280Available = false;
+  } else {
+    Serial.println("BME280 initialized successfully.");
+    isBME280Available = true;
   }
-
-esp_task_wdt_reset(); // Reset the WDT after successful initialization
 
   // Initialize LoRa
-  if (!LoRa.begin(frequency)) {
-    Serial.println("Starting LoRa failed!");
-    while (1)
-      ;
-  }
+  //Serial.println("Initializing LoRa...");
+  //if (!LoRa.begin(frequency)) {
+    //Serial.println("LoRa initialization failed!");
+    //isLoRaAvailable = false;
+  //} else {
+    //Serial.println("LoRa initialized successfully.");
+    //isLoRaAvailable = true;
+  //}
 
-esp_task_wdt_reset(); // Reset the WDT after successful initialization
-
-  Serial.println("Initialization completed.");
+  Serial.println("Setup completed.");
 }
+
 void loop() {
+  Serial.println("Entering loop...");
+
   // Ensure WiFi is connected
   if (!wifi.isConnected()) {
     Serial.println("WiFi disconnected. Attempting to reconnect...");
     wifi.connect();
+  } else {
+    Serial.println("WiFi is still connected.");
   }
 
-  // Read from BME280 sensor
-  float temperature = bmeSensor.readTemperature();
-  float humidity = bmeSensor.readHumidity();
-  float pressure = bmeSensor.readPressure();
+  if (isBME280Available) {
+    float temperature = bmeSensor.readTemperature();
+    float humidity = bmeSensor.readHumidity();
+    float pressure = bmeSensor.readPressure();
 
-  // Prepare data packet
-  String dataPacket = "Temp: " + String(temperature) + "C, Hum: " + String(humidity) + "%, Press: " + String(pressure / 100.0) + "hPa";
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.println(" C");
 
-  // Send data packet over LoRa
-  LoRa.beginPacket();
-  LoRa.print(dataPacket);
-  LoRa.endPacket();
+    Serial.print("Humidity: ");
+    Serial.print(humidity);
+    Serial.println(" %");
 
-  Serial.println(dataPacket);
+    Serial.print("Pressure: ");
+    Serial.print(pressure / 100.0);
+    Serial.println(" hPa");
+  } else {
+    Serial.println("Skipping BME280 readings; Device not initialized.");
+  }
 
-  delay(10000);  // ms delay between readings and transmissions
+  if (isLoRaAvailable) {
+    Serial.println("Sending data via LoRa...");
+    LoRa.beginPacket();
+    LoRa.print("Hello LoRa");
+    LoRa.endPacket();
+    Serial.println("Data sent.");
+  } else {
+    Serial.println("Skipping LoRa; Device not initialized.");
+  }
 
-  esp_task_wdt_reset(); // Regularly reset the WDT within loop()
+  digitalWrite(LED_BUILTIN, HIGH);   // Turn the LED on
+  delay(200);                        // Wait for 200 ms
+  digitalWrite(LED_BUILTIN, LOW);    // Turn the LED off
+  delay(200);                        // Wait for 200 ms
 
-  // Simulate work by delaying for a bit
-  delay(1000); // Note: Consider using non-blocking delays in real applications
-
-  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  Serial.println("LED ON");
-  delay(200);                      // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);  // turn the LED off by making the voltage LOW
-  delay(200);                      // wait for a second
-  Serial.println("LED OFF :)");
+  Serial.println("Exiting loop.");
+  delay(1000); // Slow down the loop to make serial output readable
 }
