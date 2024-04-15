@@ -2,23 +2,16 @@
 #include "BME280Sensor.h"
 #include "secrets.h"
 #include <esp_task_wdt.h>
-#include <LoRa.h>
 
 #define LED_BUILTIN 2
 
-// Global flag to track status for BME280 and LoRa
+
 bool isBME280Available = false;
-bool isLoRaAvailable = false;
+unsigned long ID = 0;
 
 // WiFi credentials
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
-
-// LoRa configuration parameters
-const long frequency = 433E6;  // LoRa Frequency in Hz (adjust based on your region)
-const int csPin = 18;          // LoRa radio chip select pin
-const int resetPin = 14;       // LoRa radio reset pin
-const int irqPin = 26;         // LoRa radio IRQ pin
 
 // Create sensor and WiFi objects
 WiFiConnection wifi(ssid, password);
@@ -33,10 +26,9 @@ void setup() {
   wifi.connect();
   // Initialize WiFi
   if (!wifi.isConnected()) {
-    //Serial.println("Connecting to WiFi...");
     wifi.connect();
     if (wifi.isConnected()) {
-      //Serial.println("Connected to WiFi.");
+      Serial.println("Connected to WiFi:");
     } else {
       Serial.println("Failed to connect to WiFi.");
     }
@@ -52,16 +44,6 @@ void setup() {
     isBME280Available = true;
   }
 
-  // Initialize LoRa
-  //Serial.println("Initializing LoRa...");
-  //if (!LoRa.begin(frequency)) {
-    //Serial.println("LoRa initialization failed!");
-    //isLoRaAvailable = false;
-  //} else {
-    //Serial.println("LoRa initialized successfully.");
-    //isLoRaAvailable = true;
-  //}
-
   Serial.println("Setup completed.");
 }
 
@@ -72,8 +54,6 @@ void loop() {
   if (!wifi.isConnected()) {
     Serial.println("WiFi disconnected. Attempting to reconnect...");
     wifi.connect();
-  } else {
-    //Serial.println("WiFi is still connected.");
   }
 
   if (isBME280Available) {
@@ -81,36 +61,22 @@ void loop() {
     float humidity = bmeSensor.readHumidity();
     float pressure = bmeSensor.readPressure();
 
-    Serial.print("Temperature: ");
+    Serial.print("Hitastig: ");
     Serial.print(temperature);
     Serial.println(" C");
 
-    Serial.print("Humidity: ");
+    Serial.print("Rakastig: ");
     Serial.print(humidity);
     Serial.println(" %");
 
-    Serial.print("Pressure: ");
+    Serial.print("Loftþrýstingur: ");
     Serial.print(pressure / 100.0);
     Serial.println(" hPa");
+    ID++;
   } else {
     Serial.println("Skipping BME280 readings; Device not initialized.");
   }
 
-  if (isLoRaAvailable) {
-    Serial.println("Sending data via LoRa...");
-    LoRa.beginPacket();
-    LoRa.print("Hello LoRa");
-    LoRa.endPacket();
-    Serial.println("Data sent.");
-  } else {
-    //Serial.println("Skipping LoRa; Device not initialized.");
-  }
-
-  digitalWrite(LED_BUILTIN, HIGH);   // Turn the LED on
-  delay(200);                        // Wait for 200 ms
-  digitalWrite(LED_BUILTIN, LOW);    // Turn the LED off
-  delay(200);                        // Wait for 200 ms
-
-  //Serial.println("Exiting loop.");
-  delay(10000); // Slow down the loop to make serial output readable
+  
+  delay(5000); // Slow down the loop to make serial output readable
 }
