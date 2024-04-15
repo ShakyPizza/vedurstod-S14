@@ -32,15 +32,15 @@ void setup() {
   Serial.println("Starting setup...");
   wifi.connect();
   // Initialize WiFi
-  //if (!wifi.isConnected()) {
+  if (!wifi.isConnected()) {
     //Serial.println("Connecting to WiFi...");
-    //wifi.connect();
-    //if (wifi.isConnected()) {
+    wifi.connect();
+    if (wifi.isConnected()) {
       //Serial.println("Connected to WiFi.");
-    //} else {
-      //Serial.println("Failed to connect to WiFi.");
-    //}
-  //}
+    } else {
+      Serial.println("Failed to connect to WiFi.");
+    }
+  }
 
   // Initialize BME280
   Serial.println("Initializing BME280...");
@@ -66,14 +66,14 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("Entering loop...");
+  //Serial.println("Entering loop...");
 
   // Ensure WiFi is connected
   if (!wifi.isConnected()) {
     Serial.println("WiFi disconnected. Attempting to reconnect...");
     wifi.connect();
   } else {
-    Serial.println("WiFi is still connected.");
+    //Serial.println("WiFi is still connected.");
   }
 
   if (isBME280Available) {
@@ -103,7 +103,7 @@ void loop() {
     LoRa.endPacket();
     Serial.println("Data sent.");
   } else {
-    Serial.println("Skipping LoRa; Device not initialized.");
+    //Serial.println("Skipping LoRa; Device not initialized.");
   }
 
   digitalWrite(LED_BUILTIN, HIGH);   // Turn the LED on
@@ -111,6 +111,6 @@ void loop() {
   digitalWrite(LED_BUILTIN, LOW);    // Turn the LED off
   delay(200);                        // Wait for 200 ms
 
-  Serial.println("Exiting loop.");
-  delay(1000); // Slow down the loop to make serial output readable
+  //Serial.println("Exiting loop.");
+  delay(10000); // Slow down the loop to make serial output readable
 }
