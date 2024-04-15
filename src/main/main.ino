@@ -22,12 +22,6 @@ BME280Sensor bmeSensor;
 
 void setup() {
 
-  // Initialize the ESP32 Watchdog Timer for a 30-second timeout
-  esp_task_wdt_init(30, true); // Enable panic so ESP32 restarts
-  esp_task_wdt_add(NULL); // Add the current task to WDT
-
-  Serial.println("Initializing Watchdog...");
-
   Serial.begin(115200);
   while (!Serial)
     ;  // Wait for the serial connection to initialize
@@ -37,8 +31,6 @@ void setup() {
     wifi.connect();
   }
 
-esp_task_wdt_reset(); // Reset the WDT after successful initialization
-
   // Initialize BME280 Sensor
   if (!bmeSensor.begin()) {
     Serial.println("Could not find a valid BME280 sensor!");
@@ -46,16 +38,12 @@ esp_task_wdt_reset(); // Reset the WDT after successful initialization
       ;
   }
 
-esp_task_wdt_reset(); // Reset the WDT after successful initialization
-
   // Initialize LoRa
   if (!LoRa.begin(frequency)) {
     Serial.println("Starting LoRa failed!");
     while (1)
       ;
   }
-
-esp_task_wdt_reset(); // Reset the WDT after successful initialization
 
   Serial.println("Initialization completed.");
 }
@@ -82,11 +70,6 @@ void loop() {
   Serial.println(dataPacket);
 
   delay(10000);  // ms delay between readings and transmissions
-
-  esp_task_wdt_reset(); // Regularly reset the WDT within loop()
-
-  // Simulate work by delaying for a bit
-  delay(1000); // Note: Consider using non-blocking delays in real applications
 
   digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
   Serial.println("LED ON");
