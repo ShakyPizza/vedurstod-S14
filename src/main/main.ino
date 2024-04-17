@@ -61,13 +61,17 @@ void loop() {
     float humidity = bmeSensor.readHumidity();
     float pressure = bmeSensor.readPressure();
 
+    Serial.print(ID);
+    Serial.print(", ");
     Serial.print("Hitastig: ");
     Serial.print(temperature);
-    Serial.println(" C");
+    Serial.print(" C");
+    Serial.print(" --- ");
 
     Serial.print("Rakastig: ");
     Serial.print(humidity);
-    Serial.println(" %");
+    Serial.print(" %");
+    Serial.print(" --- ");
 
     Serial.print("Loftþrýstingur: ");
     Serial.print(pressure / 100.0);
